@@ -8,13 +8,13 @@ import com.swaraj.banking_system.entity.User;
 import com.swaraj.banking_system.enums.Role;
 import com.swaraj.banking_system.enums.UserStatus;
 import com.swaraj.banking_system.exception.DuplicateResourceException;
-import com.swaraj.banking_system.exception.InvalidLoginException;
 import com.swaraj.banking_system.repository.UserRepository;
 import com.swaraj.banking_system.service.UserService;
+import com.swaraj.banking_system.util.JWTUtil;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-
-import java.time.LocalDateTime;
 
 @Service
 public class UserServiceImpl
@@ -22,13 +22,19 @@ public class UserServiceImpl
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final JWTUtil jwtUtil;
+    private final AuthenticationManager authenticationManager;
 
     public UserServiceImpl(
             UserRepository userRepository,
-            PasswordEncoder passwordEncoder
+            PasswordEncoder passwordEncoder,
+            JWTUtil jwtUtil,
+            AuthenticationManager authenticationManager
     ) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
+        this.jwtUtil = jwtUtil;
+        this.authenticationManager = authenticationManager;
     }
 
     @Override
@@ -59,9 +65,7 @@ public class UserServiceImpl
         user.setEmail(request.getEmail());
 
         user.setPassword(
-                passwordEncoder.encode(
-                        request.getPassword()
-                )
+                passwordEncoder.encode(request.getPassword())
         );
 
         user.setPhoneNumber(
@@ -71,8 +75,6 @@ public class UserServiceImpl
         user.setRole(Role.USER);
 
         user.setStatus(UserStatus.ACTIVE);
-
-
 
         User savedUser =
                 userRepository.save(user);
@@ -84,32 +86,24 @@ public class UserServiceImpl
                 "User registered successfully"
         );
     }
-    @Override
-    public LoginResponse loginUser(
-            LoginRequest request
-    ) {
 
+    @Override
+    public LoginResponse login(LoginRequest request) {
+
+        authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(
+                        request.getEmail(),
+                        request.getPassword()
+                )
+        );
         User user = userRepository
                 .findByEmail(request.getEmail())
-                .orElseThrow(() ->
-                        new InvalidLoginException(
-                                "Invalid email or password"
-                        ));
+                .orElseThrow();
 
-        boolean matches =
-                passwordEncoder.matches(
-                        request.getPassword(),
-                        user.getPassword()
-                );
 
-        if (!matches) {
-            throw new InvalidLoginException(
-                    "Invalid email or password"
-            );
-        }
+        String token =
+                jwtUtil.generateToken(user.getEmail());
 
-        return new LoginResponse(
-                "Login Successful"
-        );
+        return new LoginResponse(token);
     }
 }

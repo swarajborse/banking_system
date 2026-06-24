@@ -66,20 +66,19 @@ public class GlobalExceptionHandler {
         );
     }
 
-    @ExceptionHandler(InvalidLoginException.class)
-    public ResponseEntity<ErrorResponse>
-    handleInvalidLogin(
-            InvalidLoginException ex) {
+    @ExceptionHandler(RuntimeException.class)
+    public ResponseEntity<ErrorResponse> handleRuntimeException(
+            RuntimeException ex) {
 
-        ErrorResponse response =
+        ErrorResponse error =
                 new ErrorResponse(
                         ex.getMessage(),
-                        HttpStatus.UNAUTHORIZED.value()
+                        HttpStatus.BAD_REQUEST.value()
                 );
 
         return new ResponseEntity<>(
-                response,
-                HttpStatus.UNAUTHORIZED
+                error,
+                HttpStatus.BAD_REQUEST
         );
     }
-}
+}

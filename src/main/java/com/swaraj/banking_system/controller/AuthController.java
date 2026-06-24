@@ -5,42 +5,37 @@ import com.swaraj.banking_system.dto.request.RegisterRequest;
 import com.swaraj.banking_system.dto.response.LoginResponse;
 import com.swaraj.banking_system.dto.response.RegisterResponse;
 import com.swaraj.banking_system.service.UserService;
+import com.swaraj.banking_system.util.JWTUtil;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/auth")
+@RequestMapping("/auth")
+@RequiredArgsConstructor
 public class AuthController {
 
     private final UserService userService;
-
-    public AuthController(
-            UserService userService
-    ) {
-        this.userService = userService;
-    }
+    private final JWTUtil jwtUtil;
 
     @PostMapping("/register")
-    public RegisterResponse registerUser(
-            @Valid
-            @RequestBody
-            RegisterRequest request
-    ) {
-
-        return userService.registerUser(
-                request
-        );
+    public ResponseEntity<RegisterResponse> register(
+            @Valid @RequestBody RegisterRequest request) {
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(userService.registerUser(request));
     }
 
     @PostMapping("/login")
-    public LoginResponse loginUser(
-            @Valid
-            @RequestBody
-            LoginRequest request
-    ) {
-
-        return userService.loginUser(
-                request
+    public ResponseEntity<LoginResponse> login(
+            @Valid @RequestBody LoginRequest request) {
+        return ResponseEntity.ok(
+                userService.login(request)
         );
     }
+
+
 }
+
