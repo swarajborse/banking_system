@@ -69,8 +69,8 @@ public class MainSecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
-                                "/auth/login",
-                                "/auth/register"
+                                "api/auth/login",
+                                "api/auth/register"
                         ).permitAll()
                         .anyRequest().authenticated()
                 )

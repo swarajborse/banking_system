@@ -1,0 +1,80 @@
+package com.swaraj.banking_system.service.impl;
+
+import com.swaraj.banking_system.dto.request.CreateAccountRequest;
+import com.swaraj.banking_system.dto.response.AccountResponse;
+import com.swaraj.banking_system.entity.BankAccount;
+import com.swaraj.banking_system.entity.User;
+import com.swaraj.banking_system.enums.AccountStatus;
+import com.swaraj.banking_system.repository.BankAccountRepository;
+import com.swaraj.banking_system.repository.UserRepository;
+import com.swaraj.banking_system.service.impl_1.AccountService;
+import com.swaraj.banking_system.util.AccountNumberGenerator;
+import org.springframework.stereotype.Service;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+
+import java.time.LocalDateTime;
+
+@Service
+public class AccountServiceImpl implements AccountService {
+
+    private final BankAccountRepository bankAccountRepository;
+    private final UserRepository userRepository;
+
+    public AccountServiceImpl(
+            BankAccountRepository bankAccountRepository,
+            UserRepository userRepository
+    ) {
+        this.bankAccountRepository = bankAccountRepository;
+        this.userRepository = userRepository;
+    }
+
+    @Override
+    public AccountResponse createAccount(CreateAccountRequest request) {
+
+        // 1. Get logged-in user's email
+        Authentication authentication =
+                SecurityContextHolder.getContext().getAuthentication();
+
+        String email = authentication.getName();
+
+        // 2. Fetch User from database
+        User user = userRepository
+                .findByEmail(email)
+                .orElseThrow(() ->
+                        new RuntimeException("User not found"));
+
+        // 3. Generate unique account number
+        String accountNumber;
+
+        do {
+            accountNumber = AccountNumberGenerator.generate();
+        } while (bankAccountRepository.existsByAccountNumber(accountNumber));
+
+        // 4. Create BankAccount entity
+        BankAccount account = BankAccount.builder()
+                .accountNumber(accountNumber)
+                .accountType(request.getAccountType())
+                .accountStatus(AccountStatus.ACTIVE)
+                .branchName(request.getBranchName())
+                .ifscCode(request.getIfscCode())
+                .balance(request.getInitialDeposit())
+                .createdAt(LocalDateTime.now())
+                .user(user)
+                .build();
+
+        // 5. Save account
+        BankAccount savedAccount =
+                bankAccountRepository.save(account);
+
+        // 6. Prepare response
+        return new AccountResponse(
+                savedAccount.getAccountNumber(),
+                savedAccount.getAccountType(),
+                savedAccount.getAccountStatus(),
+                savedAccount.getBranchName(),
+                savedAccount.getIfscCode(),
+                savedAccount.getBalance()
+        );
+    }
+}
