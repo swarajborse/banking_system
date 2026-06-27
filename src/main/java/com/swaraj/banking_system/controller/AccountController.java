@@ -42,4 +42,15 @@ public class AccountController {
 
         return ResponseEntity.ok(response);
     }
+
+    @GetMapping("/{accountId}")
+    public ResponseEntity<AccountResponse> getAccountById(
+            @PathVariable Long accountId
+    ) {
+
+        AccountResponse response =
+                accountService.getAccountById(accountId);
+
+        return ResponseEntity.ok(response);
+    }
 }

@@ -15,6 +15,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class AccountServiceImpl implements AccountService {
@@ -109,5 +110,44 @@ public class AccountServiceImpl implements AccountService {
                         account.getBalance()
                 ))
                 .toList();
+    }
+
+    @Override
+    public AccountResponse getAccountById(Long accountId) {
+
+        // Get logged-in user's email
+        String email = SecurityContextHolder
+                .getContext()
+                .getAuthentication()
+                .getName();
+
+        // Fetch logged-in user
+        User user = userRepository
+                .findByEmail(email)
+                .orElseThrow(() ->
+                        new RuntimeException("User not found"));
+
+        // Fetch account
+        BankAccount account = bankAccountRepository
+                .findById(accountId)
+                .orElseThrow(() ->
+                        new RuntimeException("Account not found"));
+
+        // Ownership validation
+        if (!account.getUser().getId().equals(user.getId())) {
+            throw new RuntimeException(
+                    "You are not authorized to access this account."
+            );
+        }
+
+        // Convert Entity -> DTO
+        return new AccountResponse(
+                account.getAccountNumber(),
+                account.getAccountType(),
+                account.getAccountStatus(),
+                account.getBranchName(),
+                account.getIfscCode(),
+                account.getBalance()
+        );
     }
 }

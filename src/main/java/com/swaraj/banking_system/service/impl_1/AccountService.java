@@ -9,5 +9,6 @@ public interface AccountService {
 
     AccountResponse createAccount(CreateAccountRequest request);
     List<AccountResponse> getMyAccounts();
+    AccountResponse getAccountById(Long accountId);
 
 }
