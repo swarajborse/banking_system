@@ -3,19 +3,21 @@ package com.swaraj.banking_system.controller;
 import com.swaraj.banking_system.dto.request.CreateAccountRequest;
 import com.swaraj.banking_system.dto.response.AccountResponse;
 
-import com.swaraj.banking_system.service.impl.AccountServiceImpl;
+import com.swaraj.banking_system.service.impl_1.AccountService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/accounts")
 public class AccountController {
 
-    private final AccountServiceImpl accountService;
+    private final AccountService accountService;
 
-    public AccountController(AccountServiceImpl accountService) {
+    public AccountController(AccountService accountService) {
         this.accountService = accountService;
     }
 
@@ -30,5 +32,14 @@ public class AccountController {
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(response);
+    }
+
+    @GetMapping
+    public ResponseEntity<List<AccountResponse>> getMyAccounts() {
+
+        List<AccountResponse> response =
+                accountService.getMyAccounts();
+
+        return ResponseEntity.ok(response);
     }
 }

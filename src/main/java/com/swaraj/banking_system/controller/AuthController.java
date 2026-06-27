@@ -4,7 +4,7 @@ import com.swaraj.banking_system.dto.request.LoginRequest;
 import com.swaraj.banking_system.dto.request.RegisterRequest;
 import com.swaraj.banking_system.dto.response.LoginResponse;
 import com.swaraj.banking_system.dto.response.RegisterResponse;
-import com.swaraj.banking_system.service.UserService;
+import com.swaraj.banking_system.service.impl_1.UserService;
 import com.swaraj.banking_system.util.JWTUtil;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
