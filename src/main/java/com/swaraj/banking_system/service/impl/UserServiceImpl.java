@@ -9,7 +9,7 @@ import com.swaraj.banking_system.enums.Role;
 import com.swaraj.banking_system.enums.UserStatus;
 import com.swaraj.banking_system.exception.DuplicateResourceException;
 import com.swaraj.banking_system.repository.UserRepository;
-import com.swaraj.banking_system.service.impl_1.UserService;
+import com.swaraj.banking_system.service.interfaces.UserService;
 import com.swaraj.banking_system.util.JWTUtil;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;

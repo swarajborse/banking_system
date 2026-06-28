@@ -3,7 +3,7 @@ package com.swaraj.banking_system.controller;
 import com.swaraj.banking_system.dto.request.CreateAccountRequest;
 import com.swaraj.banking_system.dto.response.AccountResponse;
 
-import com.swaraj.banking_system.service.impl_1.AccountService;
+import com.swaraj.banking_system.service.interfaces.AccountService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

@@ -7,7 +7,7 @@ import com.swaraj.banking_system.entity.User;
 import com.swaraj.banking_system.enums.AccountStatus;
 import com.swaraj.banking_system.repository.BankAccountRepository;
 import com.swaraj.banking_system.repository.UserRepository;
-import com.swaraj.banking_system.service.impl_1.AccountService;
+import com.swaraj.banking_system.service.interfaces.AccountService;
 import com.swaraj.banking_system.util.AccountNumberGenerator;
 import org.springframework.stereotype.Service;
 import org.springframework.security.core.Authentication;
@@ -15,7 +15,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 
 @Service
 public class AccountServiceImpl implements AccountService {

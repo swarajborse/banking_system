@@ -1,4 +1,4 @@
-package com.swaraj.banking_system.service.impl_1;
+package com.swaraj.banking_system.service.interfaces;
 
 import com.swaraj.banking_system.dto.request.CreateAccountRequest;
 import com.swaraj.banking_system.dto.response.AccountResponse;
