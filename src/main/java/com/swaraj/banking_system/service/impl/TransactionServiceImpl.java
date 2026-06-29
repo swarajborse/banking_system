@@ -1,6 +1,7 @@
 package com.swaraj.banking_system.service.impl;
 
 import com.swaraj.banking_system.dto.request.DepositRequest;
+import com.swaraj.banking_system.dto.request.WithdrawRequest;
 import com.swaraj.banking_system.dto.response.TransactionResponse;
 import com.swaraj.banking_system.entity.BankAccount;
 import com.swaraj.banking_system.entity.Transaction;
@@ -36,48 +37,62 @@ public class TransactionServiceImpl implements TransactionService {
         this.userRepository = userRepository;
     }
 
-    @Override
-    public TransactionResponse deposit(DepositRequest request) {
+    private User getLoggedInUser() {
 
-        // 1. Get logged-in user's email
         String email = SecurityContextHolder
                 .getContext()
                 .getAuthentication()
                 .getName();
 
-        // 2. Fetch logged-in user
-        User user = userRepository
+        return userRepository
                 .findByEmail(email)
                 .orElseThrow(() ->
                         new RuntimeException("User not found"));
+    }
 
-        // 3. Fetch account
+    private BankAccount getOwnedAccount(Long accountId) {
+
+        User user = getLoggedInUser();
+
         BankAccount account = bankAccountRepository
-                .findById(request.getAccountId())
+                .findById(accountId)
                 .orElseThrow(() ->
                         new RuntimeException("Account not found"));
 
-        // 4. Ownership validation
         if (!account.getUser().getId().equals(user.getId())) {
+
             throw new RuntimeException(
                     "You are not authorized to access this account."
             );
         }
 
-        // 5. Account status validation
+        return account;
+    }
+
+    private void validateActiveAccount(
+            BankAccount account
+    ) {
+
         if (account.getAccountStatus() != AccountStatus.ACTIVE) {
+
             throw new RuntimeException(
                     "Account is not active."
             );
         }
 
-        // 6. Update balance
-        account.setBalance(
-                account.getBalance().add(request.getAmount())
-        );
+    }
+    @Override
+    public TransactionResponse deposit(DepositRequest request) {
 
-        // 7. Save updated account
-        bankAccountRepository.save(account);
+       BankAccount account = getOwnedAccount(request.getAccountId());
+
+validateActiveAccount(account);
+
+account.setBalance(
+        account.getBalance().add(request.getAmount())
+);
+
+bankAccountRepository.save(account);
 
         // 8. Create transaction
         Transaction transaction = Transaction.builder()
@@ -107,6 +122,81 @@ public class TransactionServiceImpl implements TransactionService {
                 .build();
     }
 
+    @Override
+    public TransactionResponse withdraw(WithdrawRequest request) {
+
+        // Get logged-in user's account
+        BankAccount account =
+                getOwnedAccount(request.getAccountId());
+
+        // Check account status
+        validateActiveAccount(account);
+
+        // Check sufficient balance
+        if (account.getBalance().compareTo(request.getAmount()) < 0) {
+
+            throw new RuntimeException(
+                    "Insufficient Balance."
+            );
+        }
+
+        // Update balance
+        account.setBalance(
+                account.getBalance()
+                        .subtract(request.getAmount())
+        );
+
+        // Save account
+        bankAccountRepository.save(account);
+
+        // Create transaction
+        Transaction transaction =
+                Transaction.builder()
+                        .referenceNumber(
+                                TransactionReferenceGenerator.generate()
+                        )
+                        .transactionType(
+                                TransactionType.WITHDRAW
+                        )
+                        .transactionStatus(
+                                TransactionStatus.SUCCESS
+                        )
+                        .amount(request.getAmount())
+                        .description(
+                                request.getDescription()
+                        )
+                        .createdAt(LocalDateTime.now())
+                        .senderAccount(account)
+                        .build();
+
+        // Save transaction
+        Transaction savedTransaction =
+                transactionRepository.save(transaction);
+
+        // Return response
+        return TransactionResponse.builder()
+                .referenceNumber(
+                        savedTransaction.getReferenceNumber()
+                )
+                .transactionType(
+                        savedTransaction.getTransactionType()
+                )
+                .transactionStatus(
+                        savedTransaction.getTransactionStatus()
+                )
+                .amount(savedTransaction.getAmount())
+                .description(
+                        savedTransaction.getDescription()
+                )
+                .createdAt(
+                        savedTransaction.getCreatedAt()
+                )
+                .senderAccountNumber(
+                        account.getAccountNumber()
+                )
+                .receiverAccountNumber(null)
+                .build();
+    }
 
 
 }

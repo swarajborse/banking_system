@@ -10,7 +10,9 @@ import java.util.List;
 public interface TransactionService {
     TransactionResponse deposit(DepositRequest request);
 
-//    TransactionResponse withdraw(WithdrawRequest request);
+
+
+    TransactionResponse withdraw(WithdrawRequest request);
 //
 //    TransactionResponse transfer(TransferRequest request);
 //
