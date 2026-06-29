@@ -1,6 +1,7 @@
 package com.swaraj.banking_system.service.impl;
 
 import com.swaraj.banking_system.dto.request.DepositRequest;
+import com.swaraj.banking_system.dto.request.TransferRequest;
 import com.swaraj.banking_system.dto.request.WithdrawRequest;
 import com.swaraj.banking_system.dto.response.TransactionResponse;
 import com.swaraj.banking_system.entity.BankAccount;
@@ -14,6 +15,7 @@ import com.swaraj.banking_system.repository.TransactionRepository;
 import com.swaraj.banking_system.repository.UserRepository;
 import com.swaraj.banking_system.service.interfaces.TransactionService;
 import com.swaraj.banking_system.util.TransactionReferenceGenerator;
+import jakarta.transaction.Transactional;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -195,6 +197,110 @@ bankAccountRepository.save(account);
                         account.getAccountNumber()
                 )
                 .receiverAccountNumber(null)
+                .build();
+    }
+
+
+    @Transactional
+    @Override
+    public TransactionResponse transfer(TransferRequest request) {
+
+        // 1. Get sender account (also validates ownership)
+        BankAccount senderAccount =
+                getOwnedAccount(request.getFromAccountId());
+
+        // 2. Validate sender account
+        validateActiveAccount(senderAccount);
+
+        // 3. Find receiver account
+        BankAccount receiverAccount =
+                bankAccountRepository
+                        .findById(request.getToAccountId())
+                        .orElseThrow(() ->
+                                new RuntimeException(
+                                        "Receiver account not found."
+                                ));
+
+        // 4. Validate receiver account
+        validateActiveAccount(receiverAccount);
+
+        // 5. Prevent self-transfer
+        if (senderAccount.getAccountId()
+                .equals(receiverAccount.getAccountId())) {
+
+            throw new RuntimeException(
+                    "Cannot transfer to the same account."
+            );
+        }
+
+        // 6. Check sufficient balance
+        if (senderAccount.getBalance()
+                .compareTo(request.getAmount()) < 0) {
+
+            throw new RuntimeException(
+                    "Insufficient balance."
+            );
+        }
+
+        // 7. Debit sender
+        senderAccount.setBalance(
+                senderAccount.getBalance()
+                        .subtract(request.getAmount())
+        );
+
+        // 8. Credit receiver
+        receiverAccount.setBalance(
+                receiverAccount.getBalance()
+                        .add(request.getAmount())
+        );
+
+        // 9. Save both accounts
+        bankAccountRepository.save(senderAccount);
+        bankAccountRepository.save(receiverAccount);
+
+        // 10. Create transaction
+        Transaction transaction =
+                Transaction.builder()
+                        .referenceNumber(
+                                TransactionReferenceGenerator.generate()
+                        )
+                        .transactionType(
+                                TransactionType.TRANSFER
+                        )
+                        .transactionStatus(
+                                TransactionStatus.SUCCESS
+                        )
+                        .amount(request.getAmount())
+                        .description(request.getDescription())
+                        .createdAt(LocalDateTime.now())
+                        .senderAccount(senderAccount)
+                        .receiverAccount(receiverAccount)
+                        .build();
+
+        // 11. Save transaction
+        Transaction savedTransaction =
+                transactionRepository.save(transaction);
+
+        // 12. Return response
+        return TransactionResponse.builder()
+                .referenceNumber(
+                        savedTransaction.getReferenceNumber()
+                )
+                .transactionType(
+                        savedTransaction.getTransactionType()
+                )
+                .transactionStatus(
+                        savedTransaction.getTransactionStatus()
+                )
+                .amount(savedTransaction.getAmount())
+                .description(savedTransaction.getDescription())
+                .createdAt(savedTransaction.getCreatedAt())
+                .senderAccountNumber(
+                        senderAccount.getAccountNumber()
+                )
+                .receiverAccountNumber(
+                        receiverAccount.getAccountNumber()
+                )
                 .build();
     }
 

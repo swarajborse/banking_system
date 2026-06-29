@@ -52,4 +52,19 @@ public class TransactionController {
                 .body(response);
     }
 
+    @PostMapping("/transfer")
+    public ResponseEntity<TransactionResponse> transfer(
+            @Valid
+            @RequestBody
+            TransferRequest request
+    ) {
+
+        TransactionResponse response =
+                transactionService.transfer(request);
+
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(response);
+    }
+
 }

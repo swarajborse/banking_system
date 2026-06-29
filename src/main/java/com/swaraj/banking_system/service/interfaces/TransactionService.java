@@ -14,7 +14,7 @@ public interface TransactionService {
 
     TransactionResponse withdraw(WithdrawRequest request);
 //
-//    TransactionResponse transfer(TransferRequest request);
+    TransactionResponse transfer(TransferRequest request);
 //
 //    List<TransactionResponse> getTransactionHistory(Long accountId);
 
