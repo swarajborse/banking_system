@@ -10,6 +10,10 @@ import com.swaraj.banking_system.entity.User;
 import com.swaraj.banking_system.enums.AccountStatus;
 import com.swaraj.banking_system.enums.TransactionStatus;
 import com.swaraj.banking_system.enums.TransactionType;
+import com.swaraj.banking_system.exception.AccountNotActiveException;
+import com.swaraj.banking_system.exception.AccountNotFoundException;
+import com.swaraj.banking_system.exception.UnauthorizedAccessException;
+import com.swaraj.banking_system.exception.UserNotFoundException;
 import com.swaraj.banking_system.repository.BankAccountRepository;
 import com.swaraj.banking_system.repository.TransactionRepository;
 import com.swaraj.banking_system.repository.UserRepository;
@@ -48,8 +52,7 @@ public class TransactionServiceImpl implements TransactionService {
 
         return userRepository
                 .findByEmail(email)
-                .orElseThrow(() ->
-                        new RuntimeException("User not found"));
+                .orElseThrow(() -> new UserNotFoundException("User not found."));
     }
 
     private BankAccount getOwnedAccount(Long accountId) {
@@ -59,11 +62,11 @@ public class TransactionServiceImpl implements TransactionService {
         BankAccount account = bankAccountRepository
                 .findById(accountId)
                 .orElseThrow(() ->
-                        new RuntimeException("Account not found"));
+         new AccountNotFoundException("Account not found."));
 
         if (!account.getUser().getId().equals(user.getId())) {
 
-            throw new RuntimeException(
+            throw new UnauthorizedAccessException(
                     "You are not authorized to access this account."
             );
         }
@@ -77,7 +80,7 @@ public class TransactionServiceImpl implements TransactionService {
 
         if (account.getAccountStatus() != AccountStatus.ACTIVE) {
 
-            throw new RuntimeException(
+            throw new AccountNotActiveException(
                     "Account is not active."
             );
         }

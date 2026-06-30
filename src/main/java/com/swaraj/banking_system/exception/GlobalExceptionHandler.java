@@ -1,33 +1,137 @@
 package com.swaraj.banking_system.exception;
 
 import com.swaraj.banking_system.dto.response.ErrorResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.transaction.InvalidTransactionException;
+import jakarta.validation.ConstraintViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    @ExceptionHandler(ResourceNotFoundException.class)
-    public ResponseEntity<ErrorResponse> handleResourceNotFound(
-            ResourceNotFoundException ex) {
+    // ==========================================
+    // Account Not Found
+    // ==========================================
 
-        ErrorResponse error =
-                new ErrorResponse(
-                        ex.getMessage(),
-                        HttpStatus.NOT_FOUND.value()
-                );
+    @ExceptionHandler(AccountNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleAccountNotFound(
+            AccountNotFoundException ex,
+            HttpServletRequest request) {
 
-        return new ResponseEntity<>(
-                error,
-                HttpStatus.NOT_FOUND
+        return buildErrorResponse(
+                ex.getMessage(),
+                HttpStatus.NOT_FOUND,
+                request
         );
     }
+
+    // ==========================================
+    // User Not Found
+    // ==========================================
+
+    @ExceptionHandler(UserNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleUserNotFound(
+            UserNotFoundException ex,
+            HttpServletRequest request) {
+
+        return buildErrorResponse(
+                ex.getMessage(),
+                HttpStatus.NOT_FOUND,
+                request
+        );
+    }
+
+    // ==========================================
+    // Unauthorized Access
+    // ==========================================
+
+    @ExceptionHandler(UnauthorizedAccessException.class)
+    public ResponseEntity<ErrorResponse> handleUnauthorizedAccess(
+            UnauthorizedAccessException ex,
+            HttpServletRequest request) {
+
+        return buildErrorResponse(
+                ex.getMessage(),
+                HttpStatus.FORBIDDEN,
+                request
+        );
+    }
+
+    // ==========================================
+    // Account Not Active
+    // ==========================================
+
+    @ExceptionHandler(AccountNotActiveException.class)
+    public ResponseEntity<ErrorResponse> handleAccountNotActive(
+            AccountNotActiveException ex,
+            HttpServletRequest request) {
+
+        return buildErrorResponse(
+                ex.getMessage(),
+                HttpStatus.BAD_REQUEST,
+                request
+        );
+    }
+
+    // ==========================================
+    // Insufficient Balance
+    // ==========================================
+
+    @ExceptionHandler(InsufficientBalanceException.class)
+    public ResponseEntity<ErrorResponse> handleInsufficientBalance(
+            InsufficientBalanceException ex,
+            HttpServletRequest request) {
+
+        return buildErrorResponse(
+                ex.getMessage(),
+                HttpStatus.BAD_REQUEST,
+                request
+        );
+    }
+
+    // ==========================================
+    // Duplicate Resource
+    // ==========================================
+
+    @ExceptionHandler(DuplicateResourceException.class)
+    public ResponseEntity<ErrorResponse> handleDuplicateResource(
+            DuplicateResourceException ex,
+            HttpServletRequest request) {
+
+        return buildErrorResponse(
+                ex.getMessage(),
+                HttpStatus.CONFLICT,
+                request
+        );
+    }
+
+    // ==========================================
+    // Invalid Transaction
+    // ==========================================
+
+    @ExceptionHandler(InvalidTransactionException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidTransaction(
+            InvalidTransactionException ex,
+            HttpServletRequest request) {
+
+        return buildErrorResponse(
+                ex.getMessage(),
+                HttpStatus.BAD_REQUEST,
+                request
+        );
+    }
+
+    // ==========================================
+    // Validation Errors (@Valid)
+    // ==========================================
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, String>> handleValidationErrors(
@@ -43,42 +147,58 @@ public class GlobalExceptionHandler {
                                 error.getDefaultMessage()
                         ));
 
-        return new ResponseEntity<>(
-                errors,
-                HttpStatus.BAD_REQUEST
+        return ResponseEntity.badRequest().body(errors);
+    }
+
+    // ==========================================
+    // Constraint Validation
+    // ==========================================
+
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<ErrorResponse> handleConstraintViolation(
+            ConstraintViolationException ex,
+            HttpServletRequest request) {
+
+        return buildErrorResponse(
+                ex.getMessage(),
+                HttpStatus.BAD_REQUEST,
+                request
         );
     }
 
-    @ExceptionHandler(DuplicateResourceException.class)
-    public ResponseEntity<ErrorResponse>
-    handleDuplicateResource(
-            DuplicateResourceException ex) {
+    // ==========================================
+    // Any Other Exception
+    // ==========================================
 
-        ErrorResponse response =
-                new ErrorResponse(
-                        ex.getMessage(),
-                        HttpStatus.CONFLICT.value()
-                );
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ErrorResponse> handleException(
+            Exception ex,
+            HttpServletRequest request) {
 
-        return new ResponseEntity<>(
-                response,
-                HttpStatus.CONFLICT
+        return buildErrorResponse(
+                ex.getMessage(),
+                HttpStatus.INTERNAL_SERVER_ERROR,
+                request
         );
     }
 
-    @ExceptionHandler(RuntimeException.class)
-    public ResponseEntity<ErrorResponse> handleRuntimeException(
-            RuntimeException ex) {
+    // ==========================================
+    // Common Error Builder
+    // ==========================================
 
-        ErrorResponse error =
-                new ErrorResponse(
-                        ex.getMessage(),
-                        HttpStatus.BAD_REQUEST.value()
-                );
+    private ResponseEntity<ErrorResponse> buildErrorResponse(
+            String message,
+            HttpStatus status,
+            HttpServletRequest request) {
 
-        return new ResponseEntity<>(
-                error,
-                HttpStatus.BAD_REQUEST
-        );
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(LocalDateTime.now())
+                .status(status.value())
+                .error(status.getReasonPhrase())
+                .message(message)
+                .path(request.getRequestURI())
+                .build();
+
+        return new ResponseEntity<>(error, status);
     }
-}
+}

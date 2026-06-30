@@ -5,6 +5,9 @@ import com.swaraj.banking_system.dto.response.AccountResponse;
 import com.swaraj.banking_system.entity.BankAccount;
 import com.swaraj.banking_system.entity.User;
 import com.swaraj.banking_system.enums.AccountStatus;
+import com.swaraj.banking_system.exception.AccountNotFoundException;
+import com.swaraj.banking_system.exception.UnauthorizedAccessException;
+import com.swaraj.banking_system.exception.UserNotFoundException;
 import com.swaraj.banking_system.repository.BankAccountRepository;
 import com.swaraj.banking_system.repository.UserRepository;
 import com.swaraj.banking_system.service.interfaces.AccountService;
@@ -43,7 +46,7 @@ public class AccountServiceImpl implements AccountService {
         User user = userRepository
                 .findByEmail(email)
                 .orElseThrow(() ->
-                        new RuntimeException("User not found"));
+         new UserNotFoundException("User not found."));
 
         // 3. Generate unique account number
         String accountNumber;
@@ -92,7 +95,7 @@ public class AccountServiceImpl implements AccountService {
         User user = userRepository
                 .findByEmail(email)
                 .orElseThrow(() ->
-                        new RuntimeException("User not found"));
+         new UserNotFoundException("User not found."));
 
         // 3. Fetch all accounts of the user
         List<BankAccount> accounts =
@@ -124,17 +127,16 @@ public class AccountServiceImpl implements AccountService {
         User user = userRepository
                 .findByEmail(email)
                 .orElseThrow(() ->
-                        new RuntimeException("User not found"));
-
+        new UserNotFoundException("User not found."));
         // Fetch account
         BankAccount account = bankAccountRepository
                 .findById(accountId)
                 .orElseThrow(() ->
-                        new RuntimeException("Account not found"));
+        new AccountNotFoundException("Account not found."));
 
         // Ownership validation
         if (!account.getUser().getId().equals(user.getId())) {
-            throw new RuntimeException(
+            throw new UnauthorizedAccessException(
                     "You are not authorized to access this account."
             );
         }

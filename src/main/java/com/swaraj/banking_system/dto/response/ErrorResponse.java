@@ -1,11 +1,23 @@
 package com.swaraj.banking_system.dto.response;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
+import lombok.*;
 
-@Data
+import java.time.LocalDateTime;
+
+@Getter
+@Setter
 @AllArgsConstructor
+@Builder
 public class ErrorResponse {
-  private String message;
+
+  private LocalDateTime timestamp;
+
   private int status;
+
+  private String error;
+
+  private String message;
+
+  private String path;
+
 }
