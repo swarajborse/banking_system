@@ -3,6 +3,7 @@ package com.swaraj.banking_system.service.impl;
 import com.swaraj.banking_system.dto.request.DepositRequest;
 import com.swaraj.banking_system.dto.request.TransferRequest;
 import com.swaraj.banking_system.dto.request.WithdrawRequest;
+import com.swaraj.banking_system.dto.response.TransactionHistoryResponse;
 import com.swaraj.banking_system.dto.response.TransactionResponse;
 import com.swaraj.banking_system.entity.BankAccount;
 import com.swaraj.banking_system.entity.Transaction;
@@ -20,11 +21,16 @@ import com.swaraj.banking_system.repository.UserRepository;
 import com.swaraj.banking_system.service.interfaces.TransactionService;
 import com.swaraj.banking_system.util.TransactionReferenceGenerator;
 import jakarta.transaction.Transactional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 public class TransactionServiceImpl implements TransactionService {
@@ -41,6 +47,7 @@ public class TransactionServiceImpl implements TransactionService {
         this.transactionRepository = transactionRepository;
         this.bankAccountRepository = bankAccountRepository;
         this.userRepository = userRepository;
+
     }
 
     private User getLoggedInUser() {
@@ -86,6 +93,91 @@ public class TransactionServiceImpl implements TransactionService {
         }
 
     }
+
+    private TransactionHistoryResponse mapToHistoryResponse(
+            Transaction transaction,
+            BankAccount account) {
+
+        TransactionHistoryResponse response =
+                new TransactionHistoryResponse();
+
+        response.setReferenceNumber(
+                transaction.getReferenceNumber()
+        );
+
+        response.setTransactionType(
+                transaction.getTransactionType()
+        );
+
+        response.setTransactionStatus(
+                transaction.getTransactionStatus()
+        );
+
+        response.setAmount(
+                transaction.getAmount()
+        );
+
+        response.setDescription(
+                transaction.getDescription()
+        );
+
+        response.setTransactionTime(
+                transaction.getCreatedAt()
+        );
+
+        response.setAccountUsed(
+                maskAccountNumber(
+                        account.getAccountNumber()
+                )
+        );
+
+        if (transaction.getSenderAccount() != null) {
+            response.setSenderAccount(
+                    maskAccountNumber(
+                            transaction.getSenderAccount()
+                                    .getAccountNumber()
+                    )
+            );
+        }
+
+        if (transaction.getReceiverAccount() != null) {
+            response.setReceiverAccount(
+                    maskAccountNumber(
+                            transaction.getReceiverAccount()
+                                    .getAccountNumber()
+                    )
+            );
+        }
+
+        // Human readable title
+        switch (transaction.getTransactionType()) {
+
+            case DEPOSIT ->
+                    response.setTitle("Money Deposited");
+
+            case WITHDRAW ->
+                    response.setTitle("Cash Withdrawal");
+
+            case TRANSFER ->
+                    response.setTitle("Money Transfer");
+        }
+
+        return response;
+    }
+
+    private String maskAccountNumber(
+            String accountNumber) {
+
+        if (accountNumber == null) {
+            return null;
+        }
+
+        return "XXXXXX" +
+                accountNumber.substring(
+                        accountNumber.length() - 4
+                );
+    }
+
     @Override
     public TransactionResponse deposit(DepositRequest request) {
 
@@ -306,6 +398,42 @@ bankAccountRepository.save(account);
                 )
                 .build();
     }
+
+    @Override
+    public Page<TransactionHistoryResponse> getTransactionHistory(
+            Long accountId,
+            int page,
+            int size
+    ) {
+
+        BankAccount account =
+                getOwnedAccount(accountId);
+
+        Pageable pageable =
+                PageRequest.of(
+                        page,
+                        size,
+                        Sort.by("createdAt").descending()
+                );
+
+        Page<Transaction> transactions =
+                transactionRepository
+                        .findBySenderAccountOrReceiverAccountOrderByCreatedAtDesc(
+                                account,
+                                account,
+                                pageable
+                        );
+
+        return transactions.map(
+                transaction ->
+                        mapToHistoryResponse(
+                                transaction,
+                                account
+                        )
+        );
+    }
+
+
 
 
 }
